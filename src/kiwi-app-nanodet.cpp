@@ -143,7 +143,6 @@ namespace nanodet{
 
             float sx = 0;
             float sy = 0;
-            cv::setNumThreads(0);
             while(get_job_and_wait(fetch_job)){
                 
                 if(fetch_job.input.size() != target_size){

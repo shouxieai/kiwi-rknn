@@ -186,7 +186,6 @@ namespace scrfd{
 
             float sx = 0;
             float sy = 0;
-            cv::setNumThreads(0);
             while(get_job_and_wait(fetch_job)){
                 
                 if(fetch_job.input.size() != target_size){
@@ -198,11 +197,12 @@ namespace scrfd{
                     sx = 1;
                     sy = 1;
                 }
-
                 if(!engine->forward()){
+                    INFOE("Forward failed");
                     fetch_job.pro->set_value({});
                     continue;
                 }
+
                 float* ptr = optr;
                 for(int i = 0; i < num_box; ++i, ptr += linesize){
                     

@@ -88,8 +88,8 @@ namespace rknn {
 
     public:
         virtual ~InferImpl();
-        virtual bool load(const std::string& file);
-        virtual bool load_from_memory(const void* pdata, size_t size);
+        virtual bool load(const std::string& file, bool sync_mode);
+        virtual bool load_from_memory(const void* pdata, size_t size, bool sync_mode);
         virtual void destroy();
         virtual bool forward() override;
         virtual std::shared_ptr<MixMemory> get_workspace() override;
@@ -165,13 +165,17 @@ namespace rknn {
         }
     }
 
-    bool InferImpl::load_from_memory(const void* pdata, size_t size) {
+    bool InferImpl::load_from_memory(const void* pdata, size_t size, bool sync_mode) {
 
         if (pdata == nullptr || size == 0)
             return false;
 
         INFO("RKNN init");
-        if(!checkRKNN(::rknn_init(&rknn_handle_, (void*)pdata, size, RKNN_FLAG_PRIOR_MEDIUM|RKNN_FLAG_ASYNC_MASK))){
+        int flags = RKNN_FLAG_PRIOR_MEDIUM;
+        if(sync_mode){
+            flags |= RKNN_FLAG_ASYNC_MASK;
+        }
+        if(!checkRKNN(::rknn_init(&rknn_handle_, (void*)pdata, size, flags))){
             INFOE("Load model failed, size = %d", size);
             return false;
         }
@@ -181,14 +185,14 @@ namespace rknn {
         return build_engine_input_and_outputs_mapper();
     }
 
-    bool InferImpl::load(const std::string& file) {
+    bool InferImpl::load(const std::string& file, bool sync_mode) {
 
         auto data = load_file(file);
         if (data.empty()){
             INFOE("Load file empty.");
             return false;
         }
-        return load_from_memory(data.data(), data.size());
+        return load_from_memory(data.data(), data.size(), sync_mode);
     }
 
     static kiwi::DataType convert_trt_datatype(rknn_tensor_type dt){
@@ -287,7 +291,6 @@ namespace rknn {
     }
 
     bool InferImpl::forward() {
-        
         if(!checkRKNN(::rknn_inputs_set(rknn_handle_, rknn_input_struct_.size(), rknn_input_struct_.data()))){
             INFOE("Set input failed.");
             return false;
@@ -300,6 +303,10 @@ namespace rknn {
             INFOE("Get output failed.");
             return false;
         }
+        // if(!checkRKNN(::rknn_outputs_release(rknn_handle_, rknn_output_struct_.size(), rknn_output_struct_.data()))){
+        //     INFOE("Release output failed.");
+        //     return false;
+        // }
         return true;
     }
 
@@ -374,18 +381,18 @@ namespace rknn {
         return orderdBlobs_[node->second];
     }
 
-    std::shared_ptr<Infer> load_infer_from_memory(const void* pdata, size_t size){
+    std::shared_ptr<Infer> load_infer_from_memory(const void* pdata, size_t size, bool sync_mode){
 
         std::shared_ptr<InferImpl> infer(new InferImpl());
-        if (!infer->load_from_memory(pdata, size))
+        if (!infer->load_from_memory(pdata, size, sync_mode))
             infer.reset();
         return infer;
     }
 
-    std::shared_ptr<Infer> load_infer(const string& file) {
+    std::shared_ptr<Infer> load_infer(const string& file, bool sync_mode) {
 
         std::shared_ptr<InferImpl> infer(new InferImpl());
-        if (!infer->load(file))
+        if (!infer->load(file, sync_mode))
             infer.reset();
         return infer;
     }

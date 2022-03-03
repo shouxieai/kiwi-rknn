@@ -17,9 +17,6 @@ cu_objs := $(cu_srcs:.cu=.cu.o)
 cu_objs := $(cu_objs:$(srcdir)/%=$(objdir)/%)
 cu_mk   := $(cu_objs:.cu.o=.cu.mk)
 
-# 当前目录
-cwd := $(shell pwd)
-
 # 定义opencv和cuda需要用到的库文件
 link_sys       := stdc++ dl pthread
 link_opencv    := opencv_core opencv_imgproc opencv_imgcodecs
@@ -32,8 +29,8 @@ include_paths := src        \
 	opencv-4.5.5/include
 
 # 定义库文件路径，只需要写路径，不需要写-L
-library_paths := $(cwd)/librknn_api/lib64 \
-		$(cwd)/opencv-4.5.5/lib \
+library_paths := /home/toybrick/Desktop/wish/librknn_api/lib64 \
+		/home/toybrick/Desktop/wish/opencv-4.5.5/lib \
 		$(syslib)
 
 # 把library path给拼接为一个字符串，例如a b c => a:b:c
