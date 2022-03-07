@@ -189,7 +189,7 @@ namespace rknn {
 
         auto data = load_file(file);
         if (data.empty()){
-            INFOE("Load file empty.");
+            INFOE("Load file empty: %s", file.c_str());
             return false;
         }
         return load_from_memory(data.data(), data.size(), sync_mode);

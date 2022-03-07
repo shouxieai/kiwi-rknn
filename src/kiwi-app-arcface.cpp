@@ -96,10 +96,10 @@ namespace arcface{
             int feature_length = output->size(1);
             input_width_       = input->size(3);
             input_height_      = input->size(2);
+            target_size_       = cv::Size(input_width_, input_height_);
             result.set_value(true);
 
             Job fetch_job;
-            cv::Size target_size(input_width_, input_height_);
             cv::Mat input_image(input_height_, input_width_, CV_8UC3, input->cpu());
             float* optr = output->cpu<float>();
 
@@ -107,34 +107,33 @@ namespace arcface{
                 
                 auto& image = get<0>(fetch_job.input);
                 bool clone_output = get<1>(fetch_job.input);
-                if(image.size() != target_size){
-                    INFOE("Invalid image size %d x %d, please use face_alignment instead");
+                image.copyTo(input_image);
+                if(!engine->forward()){
                     fetch_job.pro->set_value(cv::Mat());
                     continue;
                 }
 
-                image.copyTo(input_image);
-                if(!engine->forward()){
-                    fetch_job.pro->set_value({});
-                    continue;
-                }
-
                 auto feat = cv::Mat(1, feature_length, CV_32F, optr);
-                cv::Mat fout;
-                cv::normalize(feat, fout, 1.0f, 0.0f, cv::NORM_L2, CV_32F);
+                cv::normalize(feat, feat, 1.0f, 0.0f, cv::NORM_L2, CV_32F);
 
                 if(clone_output){
-                    fetch_job.pro->set_value(fout);
+                    fetch_job.pro->set_value(feat.clone());
                 }else{
-                    fetch_job.pro->set_value(fout);
+                    fetch_job.pro->set_value(feat);
                 }
             }
             INFO("Engine destroy.");
         }
 
         virtual bool preprocess(Job& job, const tuple<Mat, bool>& input) override{
+            
+            auto& image = get<0>(input);
+            if(image.size() != target_size_){
+                INFOE("Invalid image size %d x %d, please use face_alignment instead, target_size is %d x %d", image.cols, image.rows, target_size_.width, target_size_.height);
+                return false;
+            }
             job.input = input;
-            return !get<0>(input).empty();
+            return true;
         }
 
         virtual std::shared_future<cv::Mat> commit(const Mat& image, bool clone_output) override{
@@ -144,6 +143,7 @@ namespace arcface{
     private:
         int input_width_            = 0;
         int input_height_           = 0;
+        cv::Size target_size_;
     };
 
     shared_ptr<Infer> create_infer(

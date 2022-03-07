@@ -13,6 +13,7 @@ using namespace std;
 void test_pref(const char* model){
 
     // 测试性能启用sync mode目的是尽可能的利用npu。实际使用如果无法掌握sync mode，尽量别用
+    // 你会发现sync mode的耗时会是非这个模式的80%左右，性能有提升，这与你实际推理时有区别，注意查看
     auto infer = rknn::load_infer(model, true);
     infer->forward();
 
@@ -106,11 +107,11 @@ void arcface_demo(){
 
 int main(){
 
-    // test_pref("person_m416_plus_V15.rknn");
-    // test_pref("scrfd_2.5g_bnkps.rknn");
-    // test_pref("w600k_r50_new.rknn");
-    scrfd_demo();
-    nanodet_demo();
+    test_pref("person_m416_plus_V15.rknn");
+    test_pref("scrfd_2.5g_bnkps.rknn");
+    test_pref("w600k_r50_new.rknn");
+    // scrfd_demo();
+    // nanodet_demo();
     arcface_demo(); 
     return 0;
 }
